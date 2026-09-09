@@ -17,19 +17,30 @@ SECRET_KEY = os.getenv(
     'django-insecure-ai-job-intelligence-platform-secret-key-development-2026'
 )
 
-# In production on Render, DEBUG is False by default
+# In production (Render / Railway), DEBUG is False by default
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-# Host configuration (supports local and Render *.onrender.com domains)
+# Host configuration (supports local, Render *.onrender.com, and Railway *.railway.app / *.up.railway.app domains)
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com').split(',')
+    for host in os.getenv(
+        'ALLOWED_HOSTS',
+        'localhost,127.0.0.1,.onrender.com,.railway.app,.up.railway.app'
+    ).split(',')
     if host.strip()
 ]
 
 render_external_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME')
 if render_external_hostname and render_external_hostname not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(render_external_hostname)
+
+railway_public_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN')
+if railway_public_domain and railway_public_domain not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(railway_public_domain)
+
+railway_static_url = os.getenv('RAILWAY_STATIC_URL')
+if railway_static_url and railway_static_url not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(railway_static_url)
 
 # Application definition
 INSTALLED_APPS = [
@@ -195,6 +206,8 @@ cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://1
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.onrender\.com$",
+    r"^https://.*\.railway\.app$",
+    r"^https://.*\.up\.railway\.app$",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in local dev for smooth API access
@@ -202,13 +215,18 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in local dev for smooth API access
 # CSRF Trusted Origins (required by Django 4+ for secure cross-origin form/admin POSTs)
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
+    'https://*.railway.app',
+    'https://*.up.railway.app',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+for origin in CORS_ALLOWED_ORIGINS:
+    if origin.startswith('http') and origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 
 # Ollama AI Configuration
-# In production on Render, Ollama defaults to disabled unless an explicit accessible URL is provided.
+# In production on Render/Railway, Ollama defaults to disabled unless an explicit accessible URL is provided.
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', '').rstrip('/')
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2:latest')
