@@ -11,8 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install dependencies first for build layer caching
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy complete backend application code into /app
+COPY . /app/
 
 # Ensure staticfiles directory exists
 RUN mkdir -p /app/staticfiles
