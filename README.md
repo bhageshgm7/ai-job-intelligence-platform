@@ -238,6 +238,38 @@ ai-job-intelligence-platform/
 
 ---
 
+### 4. Deploying to Render
+
+This repository includes a native **Render Blueprint (`render.yaml`)** to deploy PostgreSQL, Django, and React simultaneously.
+
+#### Option A: 1-Click Render Blueprint (Recommended)
+1. Log into your [Render Dashboard](https://dashboard.render.com/).
+2. Click **New +** -> **Blueprint**.
+3. Connect your repository: `https://github.com/bhageshgm7/ai-job-intelligence-platform.git`.
+4. Render will automatically detect `render.yaml` and provision:
+   - **`job-intelligence-db`** (Managed PostgreSQL Database)
+   - **`ai-job-intelligence-backend`** (Python Web Service with Gunicorn & WhiteNoise)
+   - **`ai-job-intelligence-frontend`** (Static Site with SPA rewrite rules)
+5. Click **Apply**.
+6. Once the backend service is deployed, note its URL (e.g. `https://ai-job-intelligence-backend.onrender.com`).
+   If your frontend service has a custom backend URL, ensure `VITE_API_URL` on the frontend points to `https://<YOUR-BACKEND-NAME>.onrender.com/api` and redeploy the frontend once.
+
+#### Option B: Manual Service Creation
+- **PostgreSQL**: New -> PostgreSQL. Name: `job-intelligence-db`. Copy Internal Database URL.
+- **Django Backend**: New -> Web Service.
+  - Runtime: `Python 3`
+  - Build Command: `pip install -r backend/requirements.txt && python backend/manage.py collectstatic --noinput && python backend/manage.py migrate`
+  - Start Command: `gunicorn config.wsgi:application --chdir backend --bind 0.0.0.0:$PORT`
+  - Environment Variables: `DATABASE_URL`, `PYTHON_VERSION=3.11.9`, `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS=.onrender.com,localhost`, `CORS_ALLOWED_ORIGINS=https://<YOUR-FRONTEND-URL>.onrender.com`
+- **React Frontend**: New -> Static Site.
+  - Root Directory: `frontend`
+  - Build Command: `npm install && npm run build`
+  - Publish Directory: `dist`
+  - Environment Variables: `VITE_API_URL=https://<YOUR-BACKEND-URL>.onrender.com/api`
+  - Redirects/Rewrites: Rewrite `/*` -> `/index.html`
+
+---
+
 ## API Overview
 
 ### Authentication

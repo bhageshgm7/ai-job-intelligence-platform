@@ -159,7 +159,7 @@ export const Resumes = () => {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>Resume Management</h1>
           <p style={{ fontSize: '0.875rem' }}>Upload multiple resume versions, parse skill profiles, and generate AI improvements</p>
@@ -168,6 +168,25 @@ export const Resumes = () => {
           <Plus size={16} />
           <span>Upload New Resume</span>
         </button>
+      </div>
+
+      {/* Cloud Storage Architecture Notice */}
+      <div style={{
+        background: 'rgba(99, 102, 241, 0.08)',
+        border: '1px solid rgba(99, 102, 241, 0.25)',
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 16px',
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        fontSize: '0.8rem',
+        color: '#cbd5e1'
+      }}>
+        <CheckCircle2 size={16} color="#34d399" style={{ flexShrink: 0 }} />
+        <span>
+          <strong>Cloud Storage Notice:</strong> Extracted skills, text profiles, and match intelligence are preserved permanently in PostgreSQL. Raw PDF preview files use ephemeral storage.
+        </span>
       </div>
 
       {/* Loading state */}

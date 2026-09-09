@@ -9,7 +9,9 @@ TIMEOUT_SECONDS = 90  # Generous timeout for local LLM inference
 
 def get_ollama_config():
     """Retrieves current Ollama configuration from Django settings."""
-    base_url = getattr(settings, 'OLLAMA_BASE_URL', 'http://localhost:11434').rstrip('/')
+    base_url = getattr(settings, 'OLLAMA_BASE_URL', '')
+    if base_url:
+        base_url = base_url.strip().rstrip('/')
     model = getattr(settings, 'OLLAMA_MODEL', 'llama3.2:latest')
     return base_url, model
 
@@ -18,6 +20,17 @@ def check_ollama_status() -> dict:
     Checks if the Ollama server is responsive and whether the configured model is installed.
     """
     base_url, configured_model = get_ollama_config()
+
+    if not base_url:
+        return {
+            'available': False,
+            'base_url': None,
+            'configured_model': configured_model,
+            'model_available': False,
+            'available_models': [],
+            'message': 'Ollama AI is not configured on this cloud instance. All deterministic skills matching and platform tracking features remain fully active.'
+        }
+
     try:
         resp = requests.get(f"{base_url}/api/tags", timeout=3)
         if resp.status_code == 200:
@@ -64,6 +77,15 @@ def query_ollama(prompt: str, system_instruction: str = None, temperature: float
         dict with keys: 'text', 'error', 'model', 'online'
     """
     base_url, model = get_ollama_config()
+
+    if not base_url:
+        return {
+            'text': '',
+            'error': 'Ollama AI is not configured on this cloud deployment. Deterministic resume-to-job matching and application tracking are fully active.',
+            'model': model,
+            'online': False
+        }
+
     payload = {
         'model': model,
         'prompt': prompt,

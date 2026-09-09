@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,13 +17,19 @@ SECRET_KEY = os.getenv(
     'django-insecure-ai-job-intelligence-platform-secret-key-development-2026'
 )
 
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
+# In production on Render, DEBUG is False by default
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
+# Host configuration (supports local and Render *.onrender.com domains)
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com').split(',')
     if host.strip()
 ]
+
+render_external_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if render_external_hostname and render_external_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_external_hostname)
 
 # Application definition
 INSTALLED_APPS = [
@@ -31,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
 
     # Third-party apps
@@ -51,6 +59,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -81,27 +90,38 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database Configuration
-# PostgreSQL is the default production engine, with graceful fallback to SQLite for local development.
-db_engine = os.getenv('DB_ENGINE', 'sqlite').lower()
+# Uses Render PostgreSQL (via DATABASE_URL) when available,
+# otherwise falls back to local PostgreSQL or SQLite.
+database_url = os.getenv('DATABASE_URL')
 
-if db_engine == 'postgresql':
+if database_url:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DATABASE_NAME', 'job_intelligence_db'),
-            'USER': os.getenv('DATABASE_USER', 'postgres'),
-            'PASSWORD': os.getenv('DATABASE_PASSWORD', 'postgres'),
-            'HOST': os.getenv('DATABASE_HOST', 'localhost'),
-            'PORT': os.getenv('DATABASE_PORT', '5432'),
-        }
+        'default': dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+    db_engine = os.getenv('DB_ENGINE', 'sqlite').lower()
+    if db_engine == 'postgresql':
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DATABASE_NAME', 'job_intelligence_db'),
+                'USER': os.getenv('DATABASE_USER', 'postgres'),
+                'PASSWORD': os.getenv('DATABASE_PASSWORD', 'postgres'),
+                'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+                'PORT': os.getenv('DATABASE_PORT', '5432'),
+            }
         }
-    }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
@@ -132,6 +152,15 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Media files (Resumes, user uploads)
 MEDIA_URL = '/media/'
@@ -164,9 +193,13 @@ SIMPLE_JWT = {
 # CORS Configuration
 cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.onrender\.com$",
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in local dev for smooth API access
 
 # Ollama AI Configuration
-OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434').rstrip('/')
+# In production on Render, Ollama defaults to disabled unless an explicit accessible URL is provided.
+OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', '').rstrip('/')
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2:latest')
