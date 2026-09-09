@@ -39,8 +39,11 @@ The platform deploys on Railway as three co-located components in a single proje
 3. Rename the service to `ai-job-intelligence-backend` (click service name at the top to edit).
 4. Go to **Settings**:
    - **Root Directory**: Set to `/backend`
-   - Build and start commands are automatically managed by `backend/Procfile` and `backend/railway.json`:
-     `python manage.py migrate && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
+   - **Start Command**: Railway automatically uses `backend/Dockerfile` (or `backend/Procfile` / `backend/nixpacks.toml`):
+     ```bash
+     python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}
+     ```
+     *(If you ever wish to override it in the UI, you can paste the command above into the "Start Command" field under Service Settings -> Deploy).*
 5. Go to **Variables** and add:
    | Variable | Value | Description |
    |---|---|---|
