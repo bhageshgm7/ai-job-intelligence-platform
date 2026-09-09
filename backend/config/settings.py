@@ -199,6 +199,15 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in local dev for smooth API access
 
+# CSRF Trusted Origins (required by Django 4+ for secure cross-origin form/admin POSTs)
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
 # Ollama AI Configuration
 # In production on Render, Ollama defaults to disabled unless an explicit accessible URL is provided.
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', '').rstrip('/')

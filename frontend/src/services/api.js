@@ -3,6 +3,10 @@ import axios from 'axios';
 const rawBaseUrl = import.meta.env.VITE_API_URL || '/api';
 const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 
+if (typeof window !== 'undefined' && (API_BASE_URL.includes('<') || API_BASE_URL.includes('REPLACE_WITH'))) {
+  console.warn('[AI Job Intelligence Platform] Warning: VITE_API_URL contains a placeholder (' + API_BASE_URL + '). Please update VITE_API_URL in your Render Dashboard with your actual backend URL.');
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

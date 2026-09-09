@@ -44,4 +44,6 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: "https://ai-job-intelligence-backend.onrender.com/api"
+        # Set to your live backend URL + /api (e.g. https://<YOUR-BACKEND-SLUG>.onrender.com/api)
+        # Update this in the Render Dashboard Environment tab after backend creation.
+        value: "https://<YOUR-BACKEND-SLUG>.onrender.com/api"
