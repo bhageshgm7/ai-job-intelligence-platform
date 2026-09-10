@@ -1,11 +1,24 @@
 import axios from 'axios';
 
-const rawBaseUrl = import.meta.env.VITE_API_URL || '/api';
-const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+const PRODUCTION_API_URL = 'https://ai-job-intelligence-platform-production-eb7d.up.railway.app/api';
 
-if (typeof window !== 'undefined' && (API_BASE_URL.includes('<') || API_BASE_URL.includes('REPLACE_WITH'))) {
-  console.warn('[AI Job Intelligence Platform] Warning: VITE_API_URL contains a placeholder (' + API_BASE_URL + '). Please update VITE_API_URL in your cloud dashboard (Railway / Render) with your actual backend URL.');
-}
+const resolveBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && !envUrl.includes('<') && !envUrl.includes('REPLACE_WITH')) {
+    return envUrl;
+  }
+  if (typeof window !== 'undefined' && (
+    window.location.hostname.includes('vercel.app') ||
+    window.location.hostname.includes('railway.app') ||
+    window.location.hostname.includes('onrender.com')
+  )) {
+    return PRODUCTION_API_URL;
+  }
+  return '/api';
+};
+
+const rawBaseUrl = resolveBaseUrl();
+const API_BASE_URL = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,

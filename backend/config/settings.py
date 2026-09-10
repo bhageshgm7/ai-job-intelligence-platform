@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
 import dj_database_url
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -101,8 +102,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database Configuration
-# Uses Render PostgreSQL (via DATABASE_URL) when available,
-# otherwise falls back to local PostgreSQL or SQLite.
 database_url = os.getenv('DATABASE_URL')
 
 if database_url:
@@ -202,26 +201,46 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
+# Supports local dev, Vercel frontend, Railway, and Render
+cors_origins = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173,https://frontend-zeta-three-9iwduvm9ws.vercel.app'
+)
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+
+# Explicitly ensure current Vercel deployment URL is always permitted
+vercel_production_frontend = 'https://frontend-zeta-three-9iwduvm9ws.vercel.app'
+if vercel_production_frontend not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(vercel_production_frontend)
+
+# Regex matching for Vercel preview/production domains, Railway domains, and Render domains
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.onrender\.com$",
+    r"^https://.*\.vercel\.app$",
     r"^https://.*\.railway\.app$",
     r"^https://.*\.up\.railway\.app$",
+    r"^https://.*\.onrender\.com$",
 ]
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all in local dev for smooth API access
 
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'content-disposition',
+]
+
 # CSRF Trusted Origins (required by Django 4+ for secure cross-origin form/admin POSTs)
 CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
+    'https://frontend-zeta-three-9iwduvm9ws.vercel.app',
+    'https://*.vercel.app',
     'https://*.railway.app',
     'https://*.up.railway.app',
+    'https://*.onrender.com',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+
 for origin in CORS_ALLOWED_ORIGINS:
     if origin.startswith('http') and origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(origin)
